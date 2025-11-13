@@ -40,11 +40,17 @@ class EnhancedMediumBrowser:
         self.update_display()
     
     def load_articles(self):
-        """Load articles with automatic file selection"""
-        json_files = [f for f in os.listdir('.') if f.startswith('medium_articles') and f.endswith('.json')]
+        """Load articles with automatic file selection, defaulting to medium_articles_classified.json"""
+        # First, try to load the preferred default file
+        default_file = "medium_articles_classified.json"
         
-        if not json_files:
-            messagebox.showinfo("No Files", "No Medium articles JSON files found.\nPlease select a file.")
+        if os.path.exists(default_file):
+            json_file = default_file
+            print(f"📁 Using default classified file: {json_file}")
+        else:
+            # Default file doesn't exist, prompt user to select
+            messagebox.showinfo("Default File Not Found", 
+                              f"Default file '{default_file}' not found.\nPlease select a Medium articles JSON file.")
             json_file = filedialog.askopenfilename(
                 title="Select Medium Articles JSON File",
                 filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
@@ -52,15 +58,6 @@ class EnhancedMediumBrowser:
             if not json_file:
                 self.articles = []
                 return
-        else:
-            # Find the most recent classified file, or fall back to regular file
-            classified_files = [f for f in json_files if 'classified' in f]
-            if classified_files:
-                json_file = max(classified_files)  # Most recent classified file
-                print(f"📁 Found classified file: {json_file}")
-            else:
-                json_file = max(json_files)  # Most recent file
-                print(f"📁 Found regular file: {json_file}")
         
         try:
             with open(json_file, 'r', encoding='utf-8') as f:

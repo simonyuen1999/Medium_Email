@@ -16,21 +16,41 @@ class WebMediumBrowser:
         self.available_tags = set()
         
     def load_articles(self):
-        """Load articles from the most recent classified JSON file"""
-        json_files = [f for f in os.listdir('.') if f.startswith('medium_articles') and f.endswith('.json')]
+        """Load articles from medium_articles_classified.json or prompt for alternative"""
+        # First, try to load the preferred default file
+        default_file = "medium_articles_classified.json"
         
-        if not json_files:
-            print("❌ No Medium articles JSON files found.")
-            return False
-            
-        # Find the most recent classified file
-        classified_files = [f for f in json_files if 'classified' in f]
-        if classified_files:
-            json_file = max(classified_files)
-            print(f"📁 Found classified file: {json_file}")
+        if os.path.exists(default_file):
+            json_file = default_file
+            print(f"📁 Using default classified file: {json_file}")
         else:
-            json_file = max(json_files)
-            print(f"📁 Found regular file: {json_file}")
+            # Default file doesn't exist, look for alternatives
+            json_files = [f for f in os.listdir('.') if f.startswith('medium_articles') and f.endswith('.json')]
+            
+            if not json_files:
+                print(f"❌ Default file '{default_file}' not found and no other Medium articles JSON files found.")
+                print("Please ensure medium_articles_classified.json exists or run the classification process.")
+                return False
+            
+            print(f"⚠️ Default file '{default_file}' not found.")
+            print("Available files:")
+            for i, file in enumerate(json_files, 1):
+                print(f"  {i}. {file}")
+            
+            try:
+                choice = input(f"\nSelect a file (1-{len(json_files)}) or press Enter to exit: ").strip()
+                if not choice:
+                    return False
+                
+                index = int(choice) - 1
+                if 0 <= index < len(json_files):
+                    json_file = json_files[index]
+                else:
+                    print("Invalid selection.")
+                    return False
+            except (ValueError, KeyboardInterrupt):
+                print("Operation cancelled.")
+                return False
         
         try:
             with open(json_file, 'r', encoding='utf-8') as f:
@@ -91,13 +111,16 @@ class WebMediumBrowser:
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f8f9fa;
             color: #333;
+            width: 100%;
+            overflow-x: auto;
         }}
         
         .header {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 1rem 2rem;
+            padding: 1rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
         }}
         
         .header h1 {{
@@ -113,11 +136,11 @@ class WebMediumBrowser:
         
         .container {{
             display: flex;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-            gap: 2rem;
-            height: calc(100vh - 120px);
+            width: 100%;
+            margin: 0;
+            padding: 1rem;
+            gap: 1rem;
+            height: calc(100vh - 80px);
         }}
         
         .sidebar {{
@@ -284,6 +307,7 @@ class WebMediumBrowser:
         .article-table {{
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }}
         
         .article-table th {{
@@ -298,7 +322,7 @@ class WebMediumBrowser:
         }}
         
         .article-table td {{
-            padding: 0.8rem 1rem;
+            padding: 0.6rem 0.8rem;
             border-bottom: 1px solid #f1f3f4;
             vertical-align: top;
         }}
@@ -326,14 +350,19 @@ class WebMediumBrowser:
             width: 85px;
             font-size: 0.85rem;
             color: #495057;
+            white-space: nowrap;
         }}
         
         .col-title {{
-            min-width: 400px;
+            width: calc(100% - 375px); /* Total width minus index(40) + date(85) + tags(250) */
+            min-width: 300px;
         }}
         
         .col-tags {{
-            width: 280px;
+            width: 250px;
+            max-width: 250px;
+            overflow: hidden;
+            word-wrap: break-word;
         }}
         
         .article-title {{
@@ -690,8 +719,7 @@ class WebMediumBrowser:
 </html>"""
         
         # Save HTML file
-        current_date = datetime.now().strftime("%Y_%m_%d")
-        html_filename = f'medium_article_browser_{current_date}.html'
+        html_filename = 'medium_article_browser.html'
         
         with open(html_filename, 'w', encoding='utf-8') as f:
             f.write(html_content)
