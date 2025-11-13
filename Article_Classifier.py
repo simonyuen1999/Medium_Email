@@ -186,7 +186,7 @@ def main():
     
     # Save classified articles
     current_date = datetime.now().strftime("%Y_%m_%d")
-    output_filename = f'medium_articles_classified_{current_date}.json'
+    output_filename = f'medium_articles_classified.json'
     
     result = {
         'classification_date': datetime.now().isoformat(),

@@ -16,7 +16,7 @@ fi
 
 # Run the script with the virtual environment Python
 echo "🔗 Using virtual environment Python..."
-.venv/bin/python Read_Gmail.py
+.venv/bin/python Read_Medium_From_Gmail.py
 
 echo ""
 echo "✅ Gmail extraction completed!"
