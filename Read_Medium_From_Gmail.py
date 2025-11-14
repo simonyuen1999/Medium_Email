@@ -498,6 +498,19 @@ class WebBrowserGenerator:
                 tag_counts[tag] += 1
         
         return sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+
+    def generate_tag_checkboxes(self, tag_stats):
+        """Generate HTML for tag checkboxes"""
+        checkboxes = []
+        for tag, count in tag_stats:
+            safe_id = re.sub(r'[^a-zA-Z0-9]', '_', tag)
+            checkboxes.append(f'''
+                <div class="tag-item">
+                    <input type="checkbox" id="tag_{safe_id}" value="{tag}">
+                    <label for="tag_{safe_id}">{tag}</label>
+                    <span class="tag-count">({count})</span>
+                </div>''')
+        return ''.join(checkboxes)
     
     def generate_html(self, output_file='medium_article_browser.html'):
         """Generate the complete HTML page"""
@@ -507,91 +520,629 @@ class WebBrowserGenerator:
         
         tag_stats = self.calculate_tag_stats()
         
-        # Create a simplified version of the HTML for space
-        html_content = f'''<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medium Article Browser</title>
+    <title>Medium Article Browser - Web Edition</title>
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; }}
-        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; }}
-        .container {{ display: flex; padding: 1rem; gap: 1rem; }}
-        .sidebar {{ width: 300px; background: white; border-radius: 8px; padding: 1rem; }}
-        .main-content {{ flex: 1; background: white; border-radius: 8px; padding: 1rem; }}
-        .article-card {{ border: 1px solid #eee; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }}
-        .article-title {{ font-weight: 600; margin-bottom: 0.5rem; }}
-        .article-title a {{ color: #2c3e50; text-decoration: none; }}
-        .article-meta {{ color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }}
-        .tag {{ background: #667eea; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-right: 0.3rem; }}
-        .search-input {{ width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1rem; }}
-        .tag-filter {{ margin: 0.3rem 0; }}
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            width: 100%;
+            overflow-x: auto;
+        }}
+        
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+        }}
+        
+        .header h1 {{
+            font-size: 1.8rem;
+            font-weight: 600;
+        }}
+        
+        .stats {{
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }}
+        
+        .container {{
+            display: flex;
+            width: 100%;
+            margin: 0;
+            padding: 1rem;
+            gap: 1rem;
+            height: calc(100vh - 80px);
+        }}
+        
+        .sidebar {{
+            width: 380px;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            height: fit-content;
+            max-height: 100%;
+        }}
+        
+        .sidebar h2 {{
+            color: #2c3e50;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }}
+        
+        .filter-mode {{
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }}
+        
+        .filter-mode label {{
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }}
+        
+        .radio-group {{
+            display: flex;
+            gap: 1rem;
+        }}
+        
+        .radio-group label {{
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }}
+        
+        .tag-filters {{
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #fdfdfd;
+        }}
+        
+        .tag-item {{
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #f1f3f4;
+        }}
+        
+        .tag-item:last-child {{
+            border-bottom: none;
+        }}
+        
+        .tag-item input {{
+            margin-right: 0.7rem;
+            transform: scale(1.1);
+        }}
+        
+        .tag-item label {{
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #495057;
+        }}
+        
+        .tag-count {{
+            color: #6c757d;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }}
+        
+        .clear-filters {{
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.7rem;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }}
+        
+        .clear-filters:hover {{
+            background: #c0392b;
+        }}
+        
+        .main-content {{
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }}
+        
+        .controls {{
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 12px 12px 0 0;
+        }}
+        
+        .search-row {{
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }}
+        
+        .search-input {{
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }}
+        
+        .search-input:focus {{
+            outline: none;
+            border-color: #667eea;
+        }}
+        
+        .sort-control {{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }}
+        
+        .results-info {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }}
+        
+        .active-filters {{
+            font-style: italic;
+        }}
+        
+        .article-list {{
+            flex: 1;
+            overflow-y: auto;
+        }}
+        
+        .article-table {{
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }}
+        
+        .article-table th {{
+            background: #f1f3f4;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }}
+        
+        .article-table td {{
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: top;
+        }}
+        
+        .article-row:hover {{
+            background: #f8f9fa;
+        }}
+        
+        .article-row.even {{
+            background: #fdffe6;
+        }}
+        
+        .article-row.even:hover {{
+            background: #f0f8e6;
+        }}
+        
+        .col-index {{
+            width: 40px;
+            text-align: center;
+            font-weight: 600;
+            color: #6c757d;
+        }}
+        
+        .col-date {{
+            width: 85px;
+            font-size: 0.85rem;
+            color: #495057;
+            white-space: nowrap;
+        }}
+        
+        .col-title {{
+            width: calc(100% - 375px); /* Total width minus index(40) + date(85) + tags(250) */
+            min-width: 300px;
+        }}
+        
+        .col-tags {{
+            width: 250px;
+            max-width: 250px;
+            overflow: hidden;
+            word-wrap: break-word;
+        }}
+        
+        .article-title {{
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            line-height: 1.4;
+            transition: color 0.2s;
+        }}
+        
+        .article-title:hover {{
+            color: #667eea;
+        }}
+        
+        .tag-list {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }}
+        
+        .tag {{
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }}
+        
+        .no-results {{
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }}
+        
+        .export-btn {{
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }}
+        
+        .export-btn:hover {{
+            background: #218838;
+        }}
+        
+        @media (max-width: 1200px) {{
+            .container {{
+                flex-direction: column;
+                height: auto;
+            }}
+            
+            .sidebar {{
+                width: 100%;
+                max-height: 400px;
+            }}
+            
+            .tag-filters {{
+                max-height: 250px;
+            }}
+        }}
+        
+        @media (max-width: 768px) {{
+            .container {{
+                padding: 1rem;
+            }}
+            
+            .search-row {{
+                flex-direction: column;
+                align-items: stretch;
+            }}
+            
+            .col-tags {{
+                width: auto;
+            }}
+        }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📚 Medium Article Browser</h1>
-        <p>{len(self.articles)} articles • {len(self.available_tags)} tags</p>
+        <h1>📚 Medium Article Browser - Web Edition</h1>
+        <div class="stats">
+            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}
+        </div>
     </div>
     
     <div class="container">
         <div class="sidebar">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search articles...">
-            <h3>Filter by Tags</h3>
-            {"".join([f'<div class="tag-filter"><label><input type="checkbox" value="{tag}" class="tag-checkbox"> {tag} ({count})</label></div>' for tag, count in tag_stats])}
+            <h2>🏷️ Tag Filters</h2>
+            
+            <div class="filter-mode">
+                <label>Match Mode:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="filterMode" value="ANY" checked> Any tag</label>
+                    <label><input type="radio" name="filterMode" value="ALL"> All tags</label>
+                </div>
+            </div>
+            
+            <div class="tag-filters">
+                {self.generate_tag_checkboxes(tag_stats)}
+            </div>
+            
+            <button class="clear-filters" onclick="clearAllFilters()">Clear All Filters</button>
+            
+            <div id="filterStats" style="margin-top: 1rem; font-size: 0.8rem; color: #6c757d;"></div>
         </div>
         
         <div class="main-content">
-            <div id="articlesContainer">
-                {"".join([f'''<div class="article-card">
-                    <div class="article-title"><a href="{article['url']}" target="_blank">{article['title']}</a></div>
-                    <div class="article-meta">📅 {article['email_date']}</div>
-                    <div>{"".join([f'<span class="tag">{tag}</span>' for tag in article.get('tags', [])])}</div>
-                </div>''' for article in self.articles])}
+            <div class="controls">
+                <div class="search-row">
+                    <input type="text" id="searchInput" class="search-input" 
+                           placeholder="Search articles... (supports AND/OR operators)" 
+                           onkeyup="filterArticles()">
+                    <button class="export-btn" onclick="exportResults()">📥 Export</button>
+                </div>
+                
+                <div class="results-info">
+                    <div>
+                        <label class="sort-control">
+                            <input type="checkbox" id="reverseSort" onchange="filterArticles()"> 
+                            Reverse sort (oldest first)
+                        </label>
+                    </div>
+                    <div id="resultsCount">Showing {len(self.articles)} of {len(self.articles)} articles</div>
+                </div>
+                <div id="activeFilters" class="active-filters"></div>
+            </div>
+            
+            <div class="article-list">
+                <table class="article-table">
+                    <thead>
+                        <tr>
+                            <th class="col-index">#</th>
+                            <th class="col-date">Date</th>
+                            <th class="col-title">Title</th>
+                            <th class="col-tags">Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody id="articleTableBody">
+                        <!-- Articles will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <div id="noResults" class="no-results" style="display: none;">
+                    <h3>🔍 No articles found</h3>
+                    <p>Try adjusting your search criteria or clearing some filters.</p>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
-        const articles = {json.dumps(self.articles)};
-        let filteredArticles = [...articles];
+        // Article data
+        const allArticles = {json.dumps(self.articles, indent=8)};
+        const availableTags = {json.dumps(sorted(list(self.available_tags)))};
+        
+        let filteredArticles = [...allArticles];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {{
+            updateFilterStats();
+            filterArticles();
+        }});
         
         function filterArticles() {{
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const selectedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedTags = getSelectedTags();
+            const filterMode = document.querySelector('input[name="filterMode"]:checked').value;
+            const reverseSort = document.getElementById('reverseSort').checked;
             
-            filteredArticles = articles.filter(article => {{
-                const matchesSearch = !searchTerm || 
-                    article.title.toLowerCase().includes(searchTerm) || 
-                    article.url.toLowerCase().includes(searchTerm);
+            // Start with all articles
+            filteredArticles = allArticles.filter(article => {{
+                // Apply search filter
+                if (searchTerm) {{
+                    const title = article.title.toLowerCase();
+                    if (!evaluateSearchQuery(title, searchTerm)) {{
+                        return false;
+                    }}
+                }}
                 
-                const matchesTags = selectedTags.length === 0 || 
-                    selectedTags.some(tag => (article.tags || []).includes(tag));
+                // Apply tag filter
+                if (selectedTags.length > 0) {{
+                    const articleTags = article.tags || [];
+                    if (filterMode === 'ANY') {{
+                        return selectedTags.some(tag => articleTags.includes(tag));
+                    }} else {{ // ALL
+                        return selectedTags.every(tag => articleTags.includes(tag));
+                    }}
+                }}
                 
-                return matchesSearch && matchesTags;
+                return true;
             }});
             
-            renderArticles();
+            // Sort articles
+            filteredArticles.sort((a, b) => {{
+                const dateA = new Date(a.date_obj);
+                const dateB = new Date(b.date_obj);
+                return reverseSort ? dateA - dateB : dateB - dateA;
+            }});
+            
+            displayArticles();
+            updateResultsCount();
+            updateActiveFilters();
         }}
         
-        function renderArticles() {{
-            const container = document.getElementById('articlesContainer');
-            container.innerHTML = filteredArticles.map(article => `
-                <div class="article-card">
-                    <div class="article-title"><a href="${{article.url}}" target="_blank">${{article.title}}</a></div>
-                    <div class="article-meta">📅 ${{article.email_date}}</div>
-                    <div>${{(article.tags || []).map(tag => `<span class="tag">${{tag}}</span>`).join('')}}</div>
-                </div>
-            `).join('');
+        function evaluateSearchQuery(text, query) {{
+            // Simple search implementation with AND/OR
+            if (!query) return true;
+            
+            // Split by AND/OR operators
+            const terms = query.split(/\\s+(and|or)\\s+/i);
+            let result = null;
+            let operator = 'and';
+            
+            for (let i = 0; i < terms.length; i++) {{
+                if (i % 2 === 0) {{ // Term
+                    const termMatch = text.includes(terms[i].trim());
+                    if (result === null) {{
+                        result = termMatch;
+                    }} else if (operator === 'and') {{
+                        result = result && termMatch;
+                    }} else if (operator === 'or') {{
+                        result = result || termMatch;
+                    }}
+                }} else {{ // Operator
+                    operator = terms[i].toLowerCase();
+                }}
+            }}
+            
+            return result !== null ? result : false;
         }}
         
-        document.getElementById('searchInput').addEventListener('input', filterArticles);
-        document.querySelectorAll('.tag-checkbox').forEach(cb => cb.addEventListener('change', filterArticles));
+        function getSelectedTags() {{
+            const checkboxes = document.querySelectorAll('.tag-filters input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }}
+        
+        function displayArticles() {{
+            const tbody = document.getElementById('articleTableBody');
+            const noResults = document.getElementById('noResults');
+            
+            if (filteredArticles.length === 0) {{
+                tbody.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }}
+            
+            noResults.style.display = 'none';
+            
+            tbody.innerHTML = filteredArticles.map((article, index) => {{
+                const rowClass = index % 2 === 1 ? 'even' : '';
+                const tags = (article.tags || []).map(tag => 
+                    `<span class="tag">${{tag}}</span>`
+                ).join('');
+                
+                return `
+                    <tr class="article-row ${{rowClass}}">
+                        <td class="col-index">${{index + 1}}</td>
+                        <td class="col-date">${{article.email_date}}</td>
+                        <td class="col-title">
+                            <a href="${{article.url}}" target="_blank" class="article-title">
+                                ${{article.title}}
+                            </a>
+                        </td>
+                        <td class="col-tags">
+                            <div class="tag-list">${{tags}}</div>
+                        </td>
+                    </tr>
+                `;
+            }}).join('');
+        }}
+        
+        function updateResultsCount() {{
+            const resultsCount = document.getElementById('resultsCount');
+            resultsCount.textContent = `Showing ${{filteredArticles.length}} of ${{allArticles.length}} articles`;
+        }}
+        
+        function updateActiveFilters() {{
+            const selectedTags = getSelectedTags();
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const activeFilters = document.getElementById('activeFilters');
+            
+            const filters = [];
+            if (searchTerm) filters.push(`Search: "${{searchTerm}}"`);
+            if (selectedTags.length > 0) filters.push(`Tags: ${{selectedTags.join(', ')}}`);
+            
+            activeFilters.textContent = filters.length > 0 ? 
+                `Active filters: ${{filters.join(' • ')}}` : 
+                'No active filters';
+        }}
+        
+        function updateFilterStats() {{
+            const selectedTags = getSelectedTags();
+            const filterStats = document.getElementById('filterStats');
+            filterStats.textContent = selectedTags.length > 0 ? 
+                `${{selectedTags.length}} tags selected` : 
+                'No tags selected';
+        }}
+        
+        function clearAllFilters() {{
+            // Clear search
+            document.getElementById('searchInput').value = '';
+            
+            // Clear tag checkboxes
+            document.querySelectorAll('.tag-filters input[type="checkbox"]').forEach(cb => {{
+                cb.checked = false;
+            }});
+            
+            // Reset filter mode
+            document.querySelector('input[name="filterMode"][value="ANY"]').checked = true;
+            
+            updateFilterStats();
+            filterArticles();
+        }}
+        
+        function exportResults() {{
+            const exportData = {{
+                export_date: new Date().toISOString(),
+                filters_applied: {{
+                    search_query: document.getElementById('searchInput').value,
+                    selected_tags: getSelectedTags(),
+                    filter_mode: document.querySelector('input[name="filterMode"]:checked').value
+                }},
+                total_articles: filteredArticles.length,
+                articles: filteredArticles
+            }};
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {{type: 'application/json'}});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `medium_articles_filtered_${{new Date().toISOString().split('T')[0]}}.json`;
+            link.click();
+        }}
+        
+        // Add event listeners for tag checkboxes
+        document.addEventListener('change', function(e) {{
+            if (e.target.matches('.tag-filters input[type="checkbox"]')) {{
+                updateFilterStats();
+                filterArticles();
+            }}
+            
+            if (e.target.matches('input[name="filterMode"]')) {{
+                filterArticles();
+            }}
+        }});
     </script>
 </body>
-</html>'''
+</html>"""
         
         # Write HTML file
         with open(output_file, 'w', encoding='utf-8') as f:

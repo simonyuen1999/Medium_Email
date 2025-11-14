@@ -133,3 +133,26 @@ The enhanced `Read_Medium_From_Gmail.py` provides the **perfect daily workflow**
 python Read_Medium_From_Gmail.py
 ```
 **That's it!** Everything else happens automatically.
+
+### 🕒 **Automated Execution with Cron**
+For completely hands-off daily execution:
+
+#### Interactive Setup:
+```bash
+# Set up environment for cron
+./setup_cron_env.sh
+
+# Test cron-compatible script
+./cron_run_gmail_extractor.sh
+```
+
+#### Add to Cron:
+```bash
+# Edit crontab
+crontab -e
+
+# Add daily execution at 8 AM
+0 8 * * * /Users/syuen/Medium_Email/cron_run_gmail_extractor.sh
+```
+
+See **`CRON_SETUP_GUIDE.md`** for detailed cron configuration instructions.
