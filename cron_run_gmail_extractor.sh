@@ -34,19 +34,18 @@ if [ -z "$GMAIL_USERNAME" ] || [ -z "$GMAIL_PASSWORD" ]; then
     exit 1
 fi
 
+PYTHON_CMD="/opt/homebrew/bin/python"
+
 # Determine Python command to use
-if [ -d ".venv" ]; then
-    echo "🔗 Using virtual environment Python..."
-    PYTHON_CMD=".venv/bin/python"
-elif command -v python3 &> /dev/null; then
-    PYTHON_CMD="python3"
-elif command -v python &> /dev/null; then
-    PYTHON_CMD="python"
-else
-    echo "❌ Python not found!"
-    echo "📚 Please install Python or set up a virtual environment"
-    exit 1
-fi
+#if command -v python3 &> /dev/null; then
+#    PYTHON_CMD="python3"
+#elif command -v python &> /dev/null; then
+#    PYTHON_CMD="python"
+#else
+#    echo "❌ Python not found!"
+#    echo "📚 Please install Python or set up a virtual environment"
+#    exit 1
+#fi
 
 # Export the environment variables for the Python script
 export GMAIL_USERNAME
