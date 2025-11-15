@@ -875,7 +875,7 @@ class WebBrowserGenerator:
     <div class="header">
         <h1>📚 Medium Article Browser - Web Edition</h1>
         <div class="stats">
-            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}
+            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')} &nbsp; | &nbsp; Current Time: <i><span id="time"></span></i> (Page reload at 7:31 AM daily)
         </div>
     </div>
     
@@ -1140,6 +1140,37 @@ class WebBrowserGenerator:
                 filterArticles();
             }}
         }});
+        
+        // Time refresh functionality
+        function checkTimeAndRefreshOncePerDay() {{
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+
+            // Display current time in YYYY-MM-DD HH:MM format
+            const timeElement = document.getElementById("time");
+            if (timeElement) {{
+                timeElement.textContent = 
+                    `${{year}}-${{month}}-${{day}} ${{hours.toString().padStart(2, '0')}}:${{minutes.toString().padStart(2, '0')}}`;
+            }}
+
+            // Get today's date string (e.g., "2025-11-15")
+            const today = now.toISOString().split('T')[0];
+            const lastRefreshDate = localStorage.getItem("lastRefreshDate");
+
+            // Refresh once if it's 07:31 and hasn't refreshed today
+            if (hours === 7 && minutes === 31 && lastRefreshDate !== today) {{
+                localStorage.setItem("lastRefreshDate", today);
+                location.reload();
+            }}
+        }}
+        
+        // Check every minute
+        setInterval(checkTimeAndRefreshOncePerDay, 60000);
+        checkTimeAndRefreshOncePerDay(); // run immediately on load
     </script>
 </body>
 </html>"""
