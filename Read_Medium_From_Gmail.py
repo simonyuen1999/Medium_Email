@@ -206,25 +206,37 @@ def extract_articles_from_email(html_content, email_date):
     
     print(f"    🔗 Found {len(article_links)} potential article links")
     
-    processed_urls = set()
+    # Group links by URL - each URL may appear multiple times
+    # We want to keep the occurrence with the longest/best title
+    url_to_links = {}
     
     for link in article_links:
         href = link.get('href', '')
         
-        # Skip if we've already processed this URL or if it's not an article
-        if href in processed_urls or not href:
+        # Skip if empty or unwanted
+        if not href:
             continue
             
         # Skip unwanted URLs
         if any(skip in href.lower() for skip in ['unsubscribe', 'help', 'privacy', 'settings']):
             continue
         
-        processed_urls.add(href)
-        
-        # Extract title from the link text or nearby elements
+        # Extract title from the link text
         title = clean_text(link.get_text())
         
-        # If title is empty or too short, look for title in nearby elements
+        # Store this link, preferring ones with longer titles
+        if href not in url_to_links or len(title) > len(url_to_links[href]['title']):
+            url_to_links[href] = {
+                'link': link,
+                'title': title
+            }
+    
+    # Now process each unique URL
+    for href, data in url_to_links.items():
+        link = data['link']
+        title = data['title']
+        
+        # If title is still empty or too short, look for title in nearby elements
         if len(title) < 10:
             # Look for h2 or h3 elements that might contain the title
             parent_container = link
