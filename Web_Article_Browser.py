@@ -140,7 +140,8 @@ class WebMediumBrowser:
             margin: 0;
             padding: 1rem;
             gap: 1rem;
-            height: calc(100vh - 80px);
+            min-height: calc(100vh - 80px);
+            align-items: flex-start;
         }}
         
         .sidebar {{
@@ -149,9 +150,7 @@ class WebMediumBrowser:
             border-radius: 12px;
             padding: 1.5rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow-y: auto;
             height: fit-content;
-            max-height: 100%;
         }}
         
         .sidebar h2 {{
@@ -189,8 +188,6 @@ class WebMediumBrowser:
         }}
         
         .tag-filters {{
-            max-height: 500px;
-            overflow-y: auto;
             border: 1px solid #e9ecef;
             border-radius: 8px;
             padding: 1rem;
@@ -301,7 +298,6 @@ class WebMediumBrowser:
         
         .article-list {{
             flex: 1;
-            overflow-y: auto;
         }}
         
         .article-table {{
@@ -421,11 +417,6 @@ class WebMediumBrowser:
             
             .sidebar {{
                 width: 100%;
-                max-height: 400px;
-            }}
-            
-            .tag-filters {{
-                max-height: 250px;
             }}
         }}
         
