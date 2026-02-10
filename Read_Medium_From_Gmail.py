@@ -63,6 +63,44 @@ def clean_text(text):
     return " ".join(text.strip().split())
 
 
+def fix_title(title):
+    if not title:
+        return title
+    
+    # Exceptions: words to preserve and not split internally, but allow splitting around them.
+    exceptions = ["OpenAI", "MacBook", "GitHub", "SaaS", "JavaScript", "NotebookLM", "NoteBookLM", "LiteLLM"]
+    placeholders = {}
+    temp_title = title
+    
+    for i, word in enumerate(exceptions):
+        # "Excepmask" + lowercase letter ensures it is treated as a simple Titlecase word (no internal caps)
+        key = f"Excepmask{chr(97+i)}" 
+        placeholders[key] = word
+        temp_title = temp_title.replace(word, key)
+    
+    # Logic 1: CamelCase Split
+    # Insert space between Lowercase and Uppercase (e.g., "WordWord" -> "Word Word")
+    # Regex: Match [A-Z][a-z]+ followed by lookahead [A-Z]
+    temp_title = re.sub(r'([A-Z][a-z]+)(?=[A-Z])', r'\1 ', temp_title)
+    
+    # Logic 2: Punctuation Split
+    # Insert space after punctuation followed by Uppercase
+    # Excluded punctuation: '(', '-', '&', '"', '`'
+    # [^\w\s\(\-\&\"\`] matches anything that is NOT:
+    # word char, whitespace, (, -, &, ", or `
+    temp_title = re.sub(r'([^\w\s\(\-\&\"\`])(?=[A-Z])', r'\1 ', temp_title)
+    
+    # Logic 3: Digit Split
+    # Insert space between Digit and Uppercase (e.g., "2026Feb" -> "2026 Feb")
+    temp_title = re.sub(r'(\d)(?=[A-Z])', r'\1 ', temp_title)
+    
+    # Restore exceptions
+    for key, word in placeholders.items():
+        temp_title = temp_title.replace(key, word)
+    
+    return temp_title
+
+
 def render_javascript_html(html_content):
     """Render HTML with JavaScript execution using Selenium"""
     if not SELENIUM_AVAILABLE:
@@ -1487,6 +1525,10 @@ class ComprehensiveProcessor:
             url = article.get("url", "")
             if not url:
                 continue
+
+            # Fix title before saving to master
+            if "title" in article:
+                article["title"] = fix_title(article["title"])
 
             if url in existing_urls:
                 # Article exists, update if newer or has more data
