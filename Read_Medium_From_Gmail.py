@@ -35,6 +35,7 @@ from typing import Dict, List, Set
 
 from bs4 import BeautifulSoup
 
+
 # Try to import Selenium for JavaScript rendering
 try:
     from selenium import webdriver
@@ -1150,9 +1151,103 @@ class WebBrowserGenerator:
                 width: auto;
             }}
         }}
+        
+        /* Modal Styles */
+        .modal-overlay {{
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }}
+        
+        .modal {{
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            position: relative;
+        }}
+        
+        .modal h3 {{
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }}
+        
+        .modal-actions {{
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }}
+        
+        .modal-btn {{
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-decoration: none;
+            display: inline-block;
+        }}
+        
+        .modal-btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }}
+        
+        .btn-primary {{
+            background: #667eea;
+            color: white;
+        }}
+        
+        .btn-secondary {{
+            background: #28a745;
+            color: white;
+        }}
+        
+        .btn-close {{
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }}
+        
+        .btn-close:hover {{
+            color: #333;
+        }}
     </style>
 </head>
 <body>
+    <div id="optionModal" class="modal-overlay">
+        <div class="modal">
+            <button class="btn-close" onclick="closeModal()">&times;</button>
+            <h3>Choose an Action</h3>
+            <div class="modal-actions">
+                <a id="btnGoToUrl" href="#" target="_blank" class="modal-btn btn-primary" onclick="closeModal()">
+                    🌐 Go to URL
+                </a>
+                <a id="btnDownloadPdf" href="#" target="_blank" class="modal-btn btn-secondary" onclick="closeModal()">
+                    📄 PDF / Read
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="header">
         <h1>📚 Medium Article Browser - Web Edition</h1>
         <div class="stats">
@@ -1334,7 +1429,7 @@ class WebBrowserGenerator:
                         <td class="col-index">${{index + 1}}</td>
                         <td class="col-date">${{article.email_date}}</td>
                         <td class="col-title">
-                            <a href="${{article.url}}" target="_blank" class="article-title">
+                            <a href="javascript:void(0)" onclick="openOptions('${{article.url}}')" class="article-title">
                                 ${{article.title}}
                             </a>
                         </td>
@@ -1447,6 +1542,33 @@ class WebBrowserGenerator:
         // Check every minute
         setInterval(updateCurrentTime, 60000);
         updateCurrentTime(); // run immediately on load
+        
+        // Modal functionality
+        function openOptions(url) {{
+            const modal = document.getElementById('optionModal');
+            const btnGoToUrl = document.getElementById('btnGoToUrl');
+            const btnDownloadPdf = document.getElementById('btnDownloadPdf');
+            
+            // Set URLs
+            btnGoToUrl.href = url;
+            // Use r.jina.ai for clean reader view/PDF readiness or similar service
+            // Alternatively use printfriendly: `https://www.printfriendly.com/print?url=${{encodeURIComponent(url)}}`
+            // For now, using jina.ai as it is popular for "content from URL"
+            btnDownloadPdf.href = `https://www.printfriendly.com/print?url=${{encodeURIComponent(url)}}`;
+            
+            modal.style.display = 'flex';
+        }}
+        
+        function closeModal() {{
+            document.getElementById('optionModal').style.display = 'none';
+        }}
+        
+        // Close modal when clicking outside
+        document.getElementById('optionModal').addEventListener('click', function(e) {{
+            if (e.target === this) {{
+                closeModal();
+            }}
+        }});
     </script>
 </body>
 </html>"""
