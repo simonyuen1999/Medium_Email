@@ -4,6 +4,7 @@
 __pycache__/
 env/
 venv/
+fix*.py
 *.html
 *.json
 *.db

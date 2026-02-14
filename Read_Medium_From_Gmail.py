@@ -1251,7 +1251,7 @@ class WebBrowserGenerator:
     <div class="header">
         <h1>📚 Medium Article Browser - Web Edition</h1>
         <div class="stats">
-            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime("%Y-%b-%d %I:%M %p")} &nbsp; | &nbsp; Current Time: <i><span id="time"></span></i>
+            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime("%Y-%b-%d %I:%M %p")} &nbsp; | &nbsp; Current Time: <span id="time"></span>
         </div>
     </div>
     
@@ -1532,10 +1532,47 @@ class WebBrowserGenerator:
             hours12 = hours12 === 0 ? 12 : hours12;
             const hoursStr = hours12.toString().padStart(2, '0');
 
+            // Auto-Refresh Logic (Target: 8:10 AM)
+            const refreshTime = new Date();
+            refreshTime.setHours(8, 10, 0, 0);
+
+            let loadTime;
+            try {{
+                loadTime = new Date(performance.timeOrigin);
+            }} catch(e) {{
+                loadTime = new Date(); // Fallback
+            }}
+
+            // If now is past today's 8:10 AM
+            if (now > refreshTime) {{
+                // If loaded before today's 8:10 AM, we need to refresh
+                if (loadTime < refreshTime) {{
+                    console.log("Auto-refreshing daily content...");
+                    location.reload();
+                    return;
+                }}
+                // Assume next refresh is tomorrow
+                refreshTime.setDate(refreshTime.getDate() + 1);
+            }}
+
+            // Calculate countdown
+            const diffMs = refreshTime - now;
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const diffStr = `${{diffHrs.toString().padStart(2, '0')}}:${{diffMins.toString().padStart(2, '0')}}`;
+
+            // Format Refresh Time Target
+            const rYear = refreshTime.getFullYear();
+            const rMonth = monthNames[refreshTime.getMonth()];
+            const rDay = refreshTime.getDate().toString().padStart(2, '0');
+            const rHours = refreshTime.getHours().toString().padStart(2, '0');
+            const rMinutes = refreshTime.getMinutes().toString().padStart(2, '0');
+            const refreshTimeStr = `${{rYear}}-${{rMonth}}-${{rDay}} ${{rHours}}:${{rMinutes}}`;
+
             // Display current time in YYYY-MMM-DD hh:mm AM/PM format
             const timeElement = document.getElementById("time");
             if (timeElement) {{
-                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}}`;
+                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}} &nbsp; | &nbsp; Next Refresh in: ${{diffStr}} at ${{refreshTimeStr}}`;
             }}
         }}
 
