@@ -1572,7 +1572,7 @@ class WebBrowserGenerator:
             // Display current time in YYYY-MMM-DD hh:mm AM/PM format
             const timeElement = document.getElementById("time");
             if (timeElement) {{
-                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}} &nbsp; | &nbsp; Next Refresh in: ${{diffStr}} at ${{refreshTimeStr}}`;
+                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}}  |  Next Refresh in: ${{diffStr}} at ${{refreshTimeStr}}`;
             }}
         }}
 
