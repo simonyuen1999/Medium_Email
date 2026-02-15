@@ -619,7 +619,7 @@ class WebMediumBrowser:
                         <td class="col-date">${{article.email_date}}</td>
                         <td class="col-title">
                             <a href="${{article.url}}" target="_blank" class="article-title">
-                                ${{article.title}}
+                                ${{article.title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}}
                             </a>
                         </td>
                         <td class="col-tags">

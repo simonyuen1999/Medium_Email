@@ -1430,7 +1430,7 @@ class WebBrowserGenerator:
                         <td class="col-date">${{article.email_date}}</td>
                         <td class="col-title">
                             <a href="javascript:void(0)" onclick="openOptions('${{article.url}}')" class="article-title">
-                                ${{article.title}}
+                                ${{article.title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}}
                             </a>
                         </td>
                         <td class="col-tags">
