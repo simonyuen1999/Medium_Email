@@ -1091,7 +1091,7 @@ class WebBrowserGenerator:
     <div class="header">
         <h1>📚 Medium Article Browser - Web Edition</h1>
         <div class="stats">
-            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime("%Y-%b-%d %I:%M %p")} &nbsp; | &nbsp; Current Time: <i><span id="time"></span></i>
+            {len(self.articles)} articles • {len(self.available_tags)} categories • Generated on {datetime.now().strftime("%Y-%b-%d %I:%M %p")} <span id="timeContainer">&nbsp; | &nbsp; Current Time: <i><span id="time"></span></i></span>
         </div>
     </div>
     
@@ -1359,6 +1359,15 @@ class WebBrowserGenerator:
         
         // Time update functionality (updates live every minute)
         function updateCurrentTime() {{
+            // Check if running from local file system
+            if (window.location.protocol === 'file:') {{
+                const timeContainer = document.getElementById("timeContainer");
+                if (timeContainer) {{
+                    timeContainer.style.display = 'none';
+                }}
+                return; // Disable clock and auto-refresh for local files
+            }}
+
             const now = new Date();
             const year = now.getFullYear();
             const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
