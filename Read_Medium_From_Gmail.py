@@ -1568,7 +1568,7 @@ class WebBrowserGenerator:
             const diffMs = refreshTime - now;
             const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
             const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            const diffStr = `${{diffHrs.toString().padStart(2, '0')}}:${{diffMins.toString().padStart(2, '0')}}`;
+            const diffStr = `${{diffHrs.toString().padStart(2, '0')}} hour ${{diffMins.toString().padStart(2, '0')}} min`;
 
             // Format Refresh Time Target
             const rYear = refreshTime.getFullYear();
@@ -1581,7 +1581,7 @@ class WebBrowserGenerator:
             // Display current time in YYYY-MMM-DD hh:mm AM/PM format
             const timeElement = document.getElementById("time");
             if (timeElement) {{
-                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}}  |  Next Refresh in: ${{diffStr}} at ${{refreshTimeStr}}`;
+                timeElement.textContent = `${{year}}-${{month}}-${{day}} ${{hoursStr}}:${{minutes}} ${{ampm}}  |  Next Refresh cycle in ${{diffStr}} at ${{refreshTimeStr}}`;
             }}
         }}
 
