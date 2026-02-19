@@ -47,7 +47,6 @@ I can use this command to push the commit.
 
 The mcp\_run.yml has `schedule and cron` setup. Will this workflow automateically be executed? Or, it can only be triggered by GitHub Actions?
 
-
 Short answer: the schedule in [mcp\_run.yml](vscode-file://vscode-app/Applications/Visual%20Studio%20Code%20-%20Insiders.app/Contents/Resources/app/out/vs/code/electron-browser/workbench/workbench.html) is executed automatically by GitHub Actions on GitHub’s runners according to the cron you set — no local process required. Because you also included `workflow_dispatch`, the same workflow can also be started manually from GitHub’s Actions UI.
 
 Key points to know (concise):
@@ -70,3 +69,16 @@ Key points to know (concise):
   * Billing: GitHub-hosted runner minutes and artifact storage are charged per your plan (public repos are broadly free; private repos have an included allotment then bill).
 * How to verify
   * After pushing the workflow, check the Actions tab for runs (manual or scheduled). The run list and logs show execution and artifacts.
+
+## Re-run the workflow
+
+1. After committed any change into `.github/workflow/*.yml` file(s), make sure your GitHub access token has Workflow R/W permission.
+2. The best way is to visit the repo and see the latest content in the current version.
+3. Do not just re-run the existing Workflow since it still use the old commit hash.
+4. Always start with a new Actions > Show all existing workflow.
+5. In this project,
+   1. The workflow is `MCP Run`
+   2. The description: This workflow has a `workflow_dispatch` even trigger.
+6. Click the `Run workflow`, pick the branch, and click the Run.
+
+At the end of the `mcp_run.yml `workflow file, it try to check-in the output files to git branch, but these commands are commented out.   We keep them for documentation.

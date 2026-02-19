@@ -56,15 +56,15 @@ jobs:
         with:
           name: medium-articles-output
           path: |
-            medium_articles_*.json
-            medium_article_browser.html
+            ../medium_articles_*.json
+            ../medium_article_browser.html
 
       - name: Commit and push outputs (optional)
         if: success()
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add medium_articles_*.json medium_article_browser.html || true
+          # git config user.name "GitHub Actions Bot"
+          # git config user.email "actions@github.com"
+          # git add ../medium_articles_*.json ../medium_article_browser.html || true
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
