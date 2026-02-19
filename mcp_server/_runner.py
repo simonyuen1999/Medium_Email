@@ -45,10 +45,10 @@ def run_extraction(env_vars: dict, log_path: str):
                 raise ImportError("Could not find Read_Medium_From_Gmail.py to import")
 
             # Load module from file location
-            import importlib.util
+            import importlib.util as iutil
 
-            spec = importlib.util.spec_from_file_location("Read_Medium_From_Gmail", candidate)
-            module = importlib.util.module_from_spec(spec)
+            spec = iutil.spec_from_file_location("Read_Medium_From_Gmail", candidate)
+            module = iutil.module_from_spec(spec)
             sys.modules["Read_Medium_From_Gmail"] = module
             spec.loader.exec_module(module)
 
