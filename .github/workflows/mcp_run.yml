@@ -9,6 +9,8 @@ on:
 jobs:
   run-adapter:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Allow pushing commits back to repo
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,3 +49,25 @@ jobs:
         with:
           name: mcp-run-log
           path: mcp_server/logs/run_*.log
+
+      - name: Upload generated files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: medium-articles-output
+          path: |
+            medium_articles_*.json
+            medium_article_browser.html
+
+      - name: Commit and push outputs (optional)
+        if: success()
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add medium_articles_*.json medium_article_browser.html || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update: articles extracted on $(date -u +%Y-%m-%d)"
+            git push origin main
+          fi
