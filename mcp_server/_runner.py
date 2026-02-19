@@ -14,6 +14,9 @@ def run_extraction(env_vars: dict, log_path: str):
     backup = {k: os.environ.get(k) for k in env_vars.keys()}
     os.environ.update({k: v for k, v in env_vars.items() if v is not None})
 
+    # Save argv before any operations (so finally block can always restore)
+    old_argv = sys.argv[:]
+    
     timestamp = datetime.utcnow().isoformat()
     try:
         # Import the target module fresh. Try normal import first,
@@ -53,7 +56,6 @@ def run_extraction(env_vars: dict, log_path: str):
             spec.loader.exec_module(module)
 
         # Prepare argv for non-interactive run (module.main will parse args)
-        old_argv = sys.argv[:]
         sys.argv = [module.__file__]
 
         # Ensure log directory exists
