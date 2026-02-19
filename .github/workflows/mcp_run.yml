@@ -1,0 +1,45 @@
+name: MCP Run
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Run daily at 08:10 UTC (adjust as needed)
+    - cron: '10 8 * * *'
+
+jobs:
+  run-adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies (best-effort)
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run MCP adapter
+        id: run_adapter
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          GMAIL_FOLDER: ${{ secrets.GMAIL_FOLDER }}
+        run: |
+          set -e
+          # Run adapter from repo root; adapter will write logs to mcp_server/logs/
+          echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'","gmail_folder":"'"${GMAIL_FOLDER}"'"}' | python mcp_server/github_mcp_adapter.py || true
+          # Record the latest log filename
+          LATEST_LOG=$(ls -1t mcp_server/logs/run_*.log 2>/dev/null | head -n1 || true)
+          echo "latest_log=$LATEST_LOG" >> $GITHUB_OUTPUT
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-run-log
+          path: mcp_server/logs/run_*.log
