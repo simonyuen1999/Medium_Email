@@ -388,9 +388,9 @@ def extract_articles_from_email(html_content, email_date):
 
 def get_gmail_credentials():
     """Get Gmail credentials from environment variables or prompt user"""
-    username = os.getenv("GMAIL_USERNAME")
+    username = os.getenv("GMAIL_USERNAME", "simonyuen1999.hotmail@gmail.com")
     password = os.getenv("GMAIL_PASSWORD")
-    folder_name = os.getenv("GMAIL_FOLDER", "Medium")  # Default to 'Medium' if not set
+    folder_name = os.getenv("GMAIL_FOLDER", "Inbox")  # Default to 'Inbox' if not set
 
     # Check if username is missing
     if not username:
@@ -401,10 +401,11 @@ def get_gmail_credentials():
             sys.exit(1)
         # Set environment variable for current shell session
         os.environ["GMAIL_USERNAME"] = username
-        print(f"✅ GMAIL_USERNAME set for current session")
+        print("✅ GMAIL_USERNAME set for current session")
 
     # Check if password is missing
     if not password:
+        print("[DEBUG] Gmail password (GMAIL_PASSWORD) not found in environment variables.", file=sys.stderr)
         print("🔐 Gmail password not found in environment variables.")
         import getpass
 
@@ -416,7 +417,7 @@ def get_gmail_credentials():
             sys.exit(1)
         # Set environment variable for current shell session
         os.environ["GMAIL_PASSWORD"] = password
-        print(f"✅ GMAIL_PASSWORD set for current session")
+        print("✅ GMAIL_PASSWORD set for current session")
 
     # Check if folder name is missing (though we have a default)
     if not os.getenv("GMAIL_FOLDER"):
@@ -429,6 +430,7 @@ def get_gmail_credentials():
             os.environ["GMAIL_FOLDER"] = folder_name
             print(f"✅ GMAIL_FOLDER set to '{folder_name}' for current session")
 
+    print("[DEBUG] Gmail credentials obtained successfully in get_gmail_credentials().", file=sys.stderr)
     return username, password, folder_name
 
 
@@ -1935,7 +1937,7 @@ class ComprehensiveProcessor:
 
 def main():
     """Main function to extract Medium articles and save to JSON"""
-    print(f"[DEBUG] Entering main() function", file=sys.stderr)
+    print("[DEBUG] Entering main() function", file=sys.stderr)
     print(f"[DEBUG] Current working directory: {os.getcwd()}", file=sys.stderr)
     print(f"[DEBUG] GMAIL_USERNAME set: {'GMAIL_USERNAME' in os.environ}", file=sys.stderr)
     print(f"[DEBUG] GMAIL_PASSWORD set: {'GMAIL_PASSWORD' in os.environ}", file=sys.stderr)
@@ -1950,14 +1952,18 @@ def main():
     )
     args = parser.parse_args()
     print(f"[DEBUG] Command line args: {args}", file=sys.stderr)
-
+    
     if args.regen_html:
+        print("[DEBUG] args.regen_html = True, Regenerating HTML from master database", file=sys.stderr)
         processor = ComprehensiveProcessor()
         success = processor.regenerate_html_from_master()
         sys.exit(0 if success else 1)
 
+    print("[DEBUG] args.regen_html = False, Extracting Medium articles from Gmail", file=sys.stderr)
+    print("[DEBUG] Calling get_gmail_credentials()", file=sys.stderr)
     # Get Gmail credentials
     username, password, folder_name = get_gmail_credentials()
+    print(f"[DEBUG] {username=}, and {folder_name=}", file=sys.stderr)
 
     # Connect to Gmail
     print(f"🔗 Connecting to Gmail as {username}...")
