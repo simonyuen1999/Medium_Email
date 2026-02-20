@@ -3,8 +3,8 @@ name: MCP Run
 on:
   workflow_dispatch: {}
   schedule:
-    # Run daily at 08:10 UTC (adjust as needed)
-    - cron: '10 8 * * *'
+    # Run daily at 13:10 UTC (8:10 AM EST Toronto time)
+    - cron: '10 13 * * *'
 
 jobs:
   run-adapter:
@@ -50,24 +50,35 @@ jobs:
           name: mcp-run-log
           path: mcp_server/logs/run_*.log
 
-      - name: Upload generated files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: medium-articles-output
-          path: |
-            ../medium_articles_*.json
-            ../medium_article_browser.html
-
-      - name: Commit and push outputs (optional)
+      - name: Send email with article summary
         if: success()
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
         run: |
-          # git config user.name "GitHub Actions Bot"
-          # git config user.email "actions@github.com"
-          # git add ../medium_articles_*.json ../medium_article_browser.html || true
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto-update: articles extracted on $(date -u +%Y-%m-%d)"
-            git push origin main
-          fi
+          set -e
+          echo "Sending email summary with ${GMAIL_USERNAME}..."
+          python send_html_email.py
+
+      #- name: Upload generated files
+      #  if: always()
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: medium-articles-output
+      #    path: |
+      #      medium_articles_*.json
+      #      medium_article_browser.html
+      # ** Note **: ./ and ../ cannot be used in the above lines
+
+      # - name: Commit and push outputs (optional)
+      #  if: success()
+      #  run: |
+      #    # git config user.name "GitHub Actions Bot"
+      #    # git config user.email "actions@github.com"
+      #    # git add ../medium_articles_*.json ../medium_article_browser.html || true
+      #    if git diff --staged --quiet; then
+      #      echo "No changes to commit"
+      #    else
+      #      git commit -m "Auto-update: articles extracted on $(date -u +%Y-%m-%d)"
+      #      git push origin main
+      #    fi
