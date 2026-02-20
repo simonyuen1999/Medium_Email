@@ -6,16 +6,42 @@ Process Medium Article Browser HTML for email.
 - Sends via email with unique Message-ID
 """
 
+import argparse
 import os
 import json
 import re
 import smtplib
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 from html import escape
+
+
+def get_current_timestamp():
+    """Get current timestamp in EST timezone.
+    
+    If running in GitHub Actions (Ubuntu), convert UTC to EST.
+    If running locally, use local time as-is.
+    """
+    # Check if running in GitHub Actions (GITHUB_ACTIONS env var is set)
+    is_github_actions = os.getenv('GITHUB_ACTIONS') == 'true'
+    
+    if is_github_actions:
+        # GitHub Actions runs in UTC, convert to EST (UTC-5)
+        utc_now = datetime.now(timezone.utc)
+        est_offset = timedelta(hours=-5)
+        est_now = utc_now + est_offset
+        timestamp_str = est_now.strftime('%Y-%m-%d %I:%M:%S %p')
+        print(f"[GitHub Actions] UTC time: {utc_now.strftime('%Y-%m-%d %I:%M:%S %p')}")
+        print(f"[GitHub Actions] EST time: {timestamp_str}")
+    else:
+        # Local execution, use local timezone
+        timestamp_str = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+        print(f"[Local execution] Local time: {timestamp_str}")
+    
+    return timestamp_str
 
 
 def extract_articles_from_html(html_content):
@@ -34,7 +60,10 @@ def extract_articles_from_html(html_content):
 
 
 def generate_table_rows(articles):
-    """Generate static HTML table rows from articles data."""
+    """Generate static HTML table rows from articles data.
+    
+    Uses direct links to URLs instead of JavaScript onclick for email client compatibility.
+    """
     rows = []
     
     for index, article in enumerate(articles):
@@ -45,11 +74,12 @@ def generate_table_rows(articles):
         url = article['url']
         email_date = article['email_date']
         
+        # Use direct link instead of JavaScript onclick for email client compatibility
         row = f'''                        <tr class="article-row {row_class}">
                             <td class="col-index">{index + 1}</td>
                             <td class="col-date">{email_date}</td>
                             <td class="col-title">
-                                <a href="javascript:void(0)" onclick="openOptions('{url}')" class="article-title">
+                                <a href="{url}" target="_blank" class="article-title">
                                     {title}
                                 </a>
                             </td>
@@ -148,8 +178,48 @@ def process_html_for_email(html_content, articles):
         flags=re.DOTALL
     )
     
+    # Remove the modal overlay (not needed for direct links in email)
+    html_content = re.sub(
+        r'<div id="optionModal"[^>]*>.*?</div>\s*</div>\s*</div>',
+        '',
+        html_content,
+        flags=re.DOTALL
+    )
+    
+    # Remove openOptions() and closeModal() functions (not needed for direct links)
+    html_content = re.sub(
+        r'function openOptions\([^)]*\)\s*\{[^}]*\}',
+        '',
+        html_content,
+        flags=re.DOTALL
+    )
+    
+    html_content = re.sub(
+        r'function closeModal\([^)]*\)\s*\{[^}]*\}',
+        '',
+        html_content,
+        flags=re.DOTALL
+    )
+    
+    # Remove modal event listener
+    html_content = re.sub(
+        r"document\.getElementById\('optionModal'\)\.addEventListener\([^)]*\)\s*\{[^}]*\}\);",
+        '',
+        html_content,
+        flags=re.DOTALL
+    )
+    
+    # Remove entire <script> block (not needed for email - most clients strip JavaScript anyway)
+    html_content = re.sub(
+        r'<script>.*?</script>',
+        '',
+        html_content,
+        flags=re.DOTALL
+    )
+    
     # Update stats in header - remove time container
     article_count = len(articles)
+    timestamp_str = get_current_timestamp()
     # First remove the time container span
     html_content = re.sub(
         r'<span id="timeContainer">.*?</span>',
@@ -160,7 +230,7 @@ def process_html_for_email(html_content, articles):
     # Then update the stats with simpler format
     html_content = re.sub(
         r'(<div class="stats">).*?(</div>)',
-        rf'\g<1>{article_count} articles • Generated on {datetime.now().strftime("%Y-%b-%d %I:%M %p")}\g<2>',
+        rf'\g<1>{article_count} articles • Generated on {timestamp_str}\g<2>',
         html_content,
         count=1,
         flags=re.DOTALL
@@ -187,8 +257,8 @@ def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
     domain = gmail_user.split('@')[1] if '@' in gmail_user else 'gmail.com'
     message_id = f"<{unique_id}@{domain}>"
     
-    # Get subject with timestamp
-    timestamp_str = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+    # Get subject with timestamp (EST if in GitHub Actions, local time otherwise)
+    timestamp_str = get_current_timestamp()
     subject = f'Medium Article ({timestamp_str})'
     
     # Create message
@@ -237,8 +307,12 @@ def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
         raise
 
 
-def process_and_save():
-    """Main function to process HTML and save to file."""
+def process_and_save(debug=False):
+    """Main function to process HTML and save to file.
+    
+    Args:
+        debug: If True, skip sending email (default: False)
+    """
     
     # Read the HTML file
     html_file = Path(__file__).parent / 'medium_article_browser.html'
@@ -277,18 +351,33 @@ def process_and_save():
     print(f"  File: {output_file}")
     print(f"  Articles: {len(articles)}")
     
-    # Send email
-    try:
-        send_email(processed_html)
-    except Exception as e:
-        print(f"\n⚠ Email sending failed, but file was saved successfully.")
+    # Send email (unless debug mode is enabled)
+    if debug:
+        print("\n⚠ Debug mode enabled - skipping email sending")
         print(f"  You can review the file at: {output_file}")
-        raise
+    else:
+        try:
+            send_email(processed_html)
+        except Exception as e:
+            print(f"\n⚠ Email sending failed, but file was saved successfully.")
+            print(f"  You can review the file at: {output_file}")
+            raise
 
 
 if __name__ == '__main__':
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description='Process Medium Article Browser HTML and send via email'
+    )
+    parser.add_argument(
+        '-d', '--debug',
+        action='store_true',
+        help='Debug mode: generate HTML file but do not send email (default: False)'
+    )
+    args = parser.parse_args()
+    
     try:
-        process_and_save()
+        process_and_save(debug=args.debug)
     except Exception as e:
         print(f"\nError: {e}")
         import traceback
