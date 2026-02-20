@@ -394,41 +394,57 @@ def get_gmail_credentials():
 
     # Check if username is missing
     if not username:
-        print("📧 Gmail username not found in environment variables.")
-        username = input("Enter your Gmail username: ").strip()
-        if not username:
-            print("❌ Gmail username is required. Exiting.")
+        if sys.stdin.isatty():
+            print("📧 Gmail username not found in environment variables.")
+            username = input("Enter your Gmail username: ").strip()
+            if not username:
+                print("❌ Gmail username is required. Exiting.")
+                sys.exit(1)
+            # Set environment variable for current shell session
+            os.environ["GMAIL_USERNAME"] = username
+            print("✅ GMAIL_USERNAME set for current session")
+        else:
+            print("[STDERR] CRITICAL: GMAIL_USERNAME not set in non-interactive mode", file=sys.stderr)
+            print("❌ Gmail username is required. Set GMAIL_USERNAME environment variable.")
             sys.exit(1)
-        # Set environment variable for current shell session
-        os.environ["GMAIL_USERNAME"] = username
-        print("✅ GMAIL_USERNAME set for current session")
 
     # Check if password is missing
     if not password:
-        print("[DEBUG] Gmail password (GMAIL_PASSWORD) not found in environment variables.", file=sys.stderr)
-        print("🔐 Gmail password not found in environment variables.")
-        import getpass
+        if sys.stdin.isatty():
+            print("[DEBUG] Gmail password (GMAIL_PASSWORD) not found in environment variables.", file=sys.stderr)
+            print("🔐 Gmail password not found in environment variables.")
+            import getpass
 
-        password = getpass.getpass(
-            "Enter your Gmail app password (input will be hidden): "
-        ).strip()
-        if not password:
-            print("❌ Gmail password is required. Exiting.")
+            password = getpass.getpass(
+                "Enter your Gmail app password (input will be hidden): "
+            ).strip()
+            if not password:
+                print("❌ Gmail password is required. Exiting.")
+                sys.exit(1)
+            # Set environment variable for current shell session
+            os.environ["GMAIL_PASSWORD"] = password
+            print("✅ GMAIL_PASSWORD set for current session")
+        else:
+            print("[STDERR] CRITICAL: GMAIL_PASSWORD not set in non-interactive mode", file=sys.stderr)
+            print("❌ Gmail password is required. Set GMAIL_PASSWORD environment variable.")
             sys.exit(1)
-        # Set environment variable for current shell session
-        os.environ["GMAIL_PASSWORD"] = password
-        print("✅ GMAIL_PASSWORD set for current session")
 
     # Check if folder name is missing (though we have a default)
     if not os.getenv("GMAIL_FOLDER"):
-        print(f"📁 Gmail folder not specified, using default: '{folder_name}'")
-        folder_input = input(
-            f"Enter Gmail folder name (press Enter for '{folder_name}'): "
-        ).strip()
-        if folder_input:
-            folder_name = folder_input
-            os.environ["GMAIL_FOLDER"] = folder_name
-            print(f"✅ GMAIL_FOLDER set to '{folder_name}' for current session")
+        # Only prompt if running in an interactive terminal
+        if sys.stdin.isatty():
+            print(f"📁 Gmail folder not specified, using default: '{folder_name}'")
+            folder_input = input(
+                f"Enter Gmail folder name (press Enter for '{folder_name}'): "
+            ).strip()
+            if folder_input:
+                folder_name = folder_input
+                os.environ["GMAIL_FOLDER"] = folder_name
+                print(f"✅ GMAIL_FOLDER set to '{folder_name}' for current session")
+        else:
+            # Non-interactive mode: use the default without prompting
+            print(f"[DEBUG] Non-interactive mode: Using default folder '{folder_name}'", file=sys.stderr)
+            print(f"📁 Using default Gmail folder: '{folder_name}'")
 
     print("[DEBUG] Gmail credentials obtained successfully in get_gmail_credentials().", file=sys.stderr)
     return username, password, folder_name

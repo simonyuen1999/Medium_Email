@@ -48,8 +48,11 @@ def main():
         if k in payload:
             env_key = "GMAIL_" + k.split("gmail_")[-1].upper()
             env[env_key] = payload[k]
+            # Debug output to stderr (visible in GitHub Actions)
+            print(f"[DEBUG] Setting {env_key} from payload", file=sys.stderr)
 
     print(f"Starting extraction job {job_id}, logging to: {log_path}")
+    print(f"[DEBUG] Environment variables set: {list(env.keys())}", file=sys.stderr)
     run_extraction(env, log_path)
     print(f"Finished. See log: {log_path}")
 

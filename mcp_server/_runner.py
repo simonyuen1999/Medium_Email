@@ -11,6 +11,9 @@ def run_extraction(env_vars: dict, log_path: str):
 
     This imports the module (without modifying it) and calls its `main()` entrypoint.
     """
+    # Debug output to stderr (visible in GitHub Actions)
+    print(f"[DEBUG] _runner.py: Setting environment variables: {list(env_vars.keys())}", file=sys.stderr)
+    
     # Backup current env vars we will override
     backup = {k: os.environ.get(k) for k in env_vars.keys()}
     os.environ.update({k: v for k, v in env_vars.items() if v is not None})

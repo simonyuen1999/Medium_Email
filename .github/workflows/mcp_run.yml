@@ -34,12 +34,17 @@ jobs:
         env:
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          GMAIL_FOLDER: ${{ secrets.GMAIL_FOLDER }}
+          GMAIL_FOLDER: ${{ vars.GMAIL_FOLDER }}
         run: |
           set -e
           # Run adapter from repo root; adapter will write logs to mcp_server/logs/
           # Note: stdout goes to log file, stderr comes to console for debugging
-          echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'","gmail_folder":"'"${GMAIL_FOLDER}"'"}' | python mcp_server/github_mcp_adapter.py
+          # Only include gmail_folder in JSON if it's not empty
+          if [ -n "$GMAIL_FOLDER" ]; then
+            echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'","gmail_folder":"'"${GMAIL_FOLDER}"'"}' | python mcp_server/github_mcp_adapter.py
+          else
+            echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'"}' | python mcp_server/github_mcp_adapter.py
+          fi
           # Record the latest log filename
           LATEST_LOG=$(ls -1t mcp_server/logs/run_*.log 2>/dev/null | head -n1 || true)
           echo "latest_log=$LATEST_LOG" >> $GITHUB_OUTPUT
