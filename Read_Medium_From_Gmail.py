@@ -45,10 +45,11 @@ try:
     from selenium.webdriver.support.ui import WebDriverWait
 
     SELENIUM_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     SELENIUM_AVAILABLE = False
     print("⚠️  Selenium not available. Install with: pip install selenium")
     print("   Also install ChromeDriver for full JavaScript support")
+    print(f"[STDERR] Selenium import error: {e}", file=sys.stderr)
 
 
 def extract_reading_time(text):
@@ -246,6 +247,7 @@ def render_javascript_html(html_content):
 
             except Exception as e:
                 print(f"    ⚠️  Click simulation failed: {e}")
+                print(f"[STDERR] Click simulation failed: {e}", file=sys.stderr)
 
             # Get the rendered HTML with generated URLs
             rendered_html = driver.page_source
@@ -262,6 +264,7 @@ def render_javascript_html(html_content):
 
     except Exception as e:
         print(f"⚠️  JavaScript rendering failed: {e}")
+        print(f"[STDERR] JavaScript rendering failed: {e}", file=sys.stderr)
         return html_content  # Fallback to original HTML
 
 
@@ -774,7 +777,8 @@ class WebBrowserGenerator:
                 article["date_obj"] = datetime.strptime(
                     article["email_date"], "%Y-%m-%d"
                 ).isoformat()
-            except:
+            except Exception as e:
+                print(f"[STDERR] Date parsing error for article: {e}", file=sys.stderr)
                 article["date_obj"] = datetime.now().isoformat()
 
             # Collect tags
@@ -805,8 +809,10 @@ class WebBrowserGenerator:
 
     def generate_html(self, output_file="medium_article_browser.html"):
         """Generate the complete HTML page"""
+        print(f"[DEBUG] Entering generate_html(), output_file={output_file}", file=sys.stderr)
         if not self.articles:
             print("❌ No articles to generate HTML for.")
+            print(f"[STDERR] No articles available for HTML generation", file=sys.stderr)
             return False
 
         tag_stats = self.calculate_tag_stats()
@@ -1620,10 +1626,17 @@ class WebBrowserGenerator:
 </html>"""
 
         # Write HTML file
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(html_content)
-
-        return True
+        try:
+            print(f"[DEBUG] Attempting to write HTML file: {output_file}", file=sys.stderr)
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print(f"[DEBUG] Successfully wrote HTML file: {output_file}", file=sys.stderr)
+            return True
+        except Exception as e:
+            print(f"[STDERR] CRITICAL: Failed to write HTML file {output_file}: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return False
 
 
 class ComprehensiveProcessor:
@@ -1652,6 +1665,7 @@ class ComprehensiveProcessor:
                 return json.load(f)
         except Exception as e:
             print(f"Error loading {filepath}: {e}")
+            print(f"[STDERR] JSON file loading error for {filepath}: {e}", file=sys.stderr)
             return {}
 
     def load_master_database(self) -> Dict:
@@ -1754,6 +1768,7 @@ class ComprehensiveProcessor:
         print("\n" + "=" * 60)
         print("🚀 COMPREHENSIVE PROCESSING PIPELINE")
         print("=" * 60)
+        print(f"[DEBUG] Starting merge_and_process_all() function", file=sys.stderr)
 
         # Step 1: Find and merge all dated files
         print("📋 Step 1: Merging all dated files...")
@@ -1822,11 +1837,15 @@ class ComprehensiveProcessor:
 
         # Step 5: Generate web browser
         print("\n📋 Step 5: Generating web browser...")
+        print(f"[DEBUG] Classified articles count: {len(classified_articles)}", file=sys.stderr)
         web_generator = WebBrowserGenerator(classified_articles)
         success = web_generator.generate_html("medium_article_browser.html")
 
         if success:
             print(f"✅ Web browser generated: medium_article_browser.html")
+            print(f"[DEBUG] HTML generation successful", file=sys.stderr)
+        else:
+            print(f"[STDERR] CRITICAL: HTML generation failed", file=sys.stderr)
 
         # Final summary
         print("\n" + "=" * 60)
@@ -1916,6 +1935,10 @@ class ComprehensiveProcessor:
 
 def main():
     """Main function to extract Medium articles and save to JSON"""
+    print(f"[DEBUG] Entering main() function", file=sys.stderr)
+    print(f"[DEBUG] Current working directory: {os.getcwd()}", file=sys.stderr)
+    print(f"[DEBUG] GMAIL_USERNAME set: {'GMAIL_USERNAME' in os.environ}", file=sys.stderr)
+    print(f"[DEBUG] GMAIL_PASSWORD set: {'GMAIL_PASSWORD' in os.environ}", file=sys.stderr)
 
     parser = argparse.ArgumentParser(
         description="Extract Medium articles or regenerate HTML from master database."
@@ -1926,6 +1949,7 @@ def main():
         help="Skip Gmail and regenerate HTML from medium_articles_master.json",
     )
     args = parser.parse_args()
+    print(f"[DEBUG] Command line args: {args}", file=sys.stderr)
 
     if args.regen_html:
         processor = ComprehensiveProcessor()
@@ -1957,9 +1981,15 @@ def main():
         print("   • Username is correct (full email address)")
         print("   • Password is an App Password (not regular password)")
         print("   • 2-Factor Authentication is enabled")
+        print(f"[STDERR] CRITICAL: IMAP authentication failed: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"❌ Connection error: {e}")
+        print(f"[STDERR] CRITICAL: Connection error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         sys.exit(1)
 
     # Search for Medium emails only
@@ -1992,7 +2022,8 @@ def main():
             # Parse email date
             email_datetime = email.utils.parsedate_to_datetime(email_date_raw)
             email_date = email_datetime.strftime("%Y-%m-%d")
-        except:
+        except Exception as e:
+            print(f"[STDERR] Email date parsing error: {e}", file=sys.stderr)
             email_date = datetime.now().strftime("%Y-%m-%d")
 
         # Extract HTML content
@@ -2050,10 +2081,13 @@ def main():
 
         # ===== COMPREHENSIVE PROCESSING PIPELINE =====
         print(f"\n🚀 Starting comprehensive processing pipeline...")
+        print(f"[DEBUG] Articles saved to: {filename}", file=sys.stderr)
         processor = ComprehensiveProcessor()
+        print(f"[DEBUG] ComprehensiveProcessor instantiated", file=sys.stderr)
 
         try:
             success = processor.merge_and_process_all()
+            print(f"[DEBUG] merge_and_process_all() returned: {success}", file=sys.stderr)
 
             if success:
                 print(f"\n🎯 DAILY WORKFLOW COMPLETE!")
@@ -2072,6 +2106,9 @@ def main():
             print(f"\n❌ Processing pipeline error: {str(e)}")
             print(f"   Gmail extraction completed successfully: {filename}")
             print(f"   You can run comprehensive processing separately if needed")
+            print(f"[STDERR] CRITICAL: Processing pipeline error: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
 
     else:
         print("❌ No articles found")

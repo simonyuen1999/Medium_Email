@@ -63,13 +63,18 @@ def run_extraction(env_vars: dict, log_path: str):
         with open(log_path, "a", encoding="utf-8") as lf:
             lf.write(f"\n=== RUN START {timestamp} ===\n")
             try:
-                with redirect_stdout(lf), redirect_stderr(lf):
+                # Only redirect stdout to log file; keep stderr going to console
+                # This allows stderr debug messages to appear in GitHub Actions logs
+                with redirect_stdout(lf):
                     module.main()
             except SystemExit:
                 # main() may call sys.exit(); treat as normal termination
                 pass
             except Exception as e:
-                lf.write(f"\nERROR during run: {e}\n")
+                error_msg = f"\nERROR during run: {e}\n"
+                lf.write(error_msg)
+                # Also print to stderr so it appears in GitHub Actions log
+                print(error_msg, file=sys.stderr)
             lf.write(f"\n=== RUN END {datetime.utcnow().isoformat()} ===\n")
 
     finally:

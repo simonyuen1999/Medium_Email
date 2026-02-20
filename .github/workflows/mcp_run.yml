@@ -38,10 +38,21 @@ jobs:
         run: |
           set -e
           # Run adapter from repo root; adapter will write logs to mcp_server/logs/
-          echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'","gmail_folder":"'"${GMAIL_FOLDER}"'"}' | python mcp_server/github_mcp_adapter.py || true
+          # Note: stdout goes to log file, stderr comes to console for debugging
+          echo '{"gmail_username":"'"${GMAIL_USERNAME}"'","gmail_password":"'"${GMAIL_PASSWORD}"'","gmail_folder":"'"${GMAIL_FOLDER}"'"}' | python mcp_server/github_mcp_adapter.py
           # Record the latest log filename
           LATEST_LOG=$(ls -1t mcp_server/logs/run_*.log 2>/dev/null | head -n1 || true)
           echo "latest_log=$LATEST_LOG" >> $GITHUB_OUTPUT
+          # Check if HTML file was generated
+          if [ -f "medium_article_browser.html" ]; then
+            echo "✅ HTML file generated successfully"
+            ls -lh medium_article_browser.html
+          else
+            echo "⚠️ WARNING: HTML file not found!"
+            echo "Files in current directory:"
+            ls -la
+            exit 1
+          fi
 
       - name: Upload run log
         if: always()
@@ -49,6 +60,20 @@ jobs:
         with:
           name: mcp-run-log
           path: mcp_server/logs/run_*.log
+
+      - name: Display run log (for debugging)
+        if: always()
+        run: |
+          LATEST_LOG=$(ls -1t mcp_server/logs/run_*.log 2>/dev/null | head -n1 || true)
+          if [ -n "$LATEST_LOG" ]; then
+            echo "=== Log file: $LATEST_LOG ==="
+            echo "=== Last 200 lines of stdout log ==="
+            tail -n 200 "$LATEST_LOG"
+            echo ""
+            echo "=== Log file size: $(wc -l < "$LATEST_LOG") lines ==="
+          else
+            echo "No log file found"
+          fi
 
       - name: Send email with article summary
         if: success()
