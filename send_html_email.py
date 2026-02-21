@@ -281,7 +281,7 @@ def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
     msg.attach(html_part)
     
     # Send email via Gmail SMTP
-    print(f"\nConnecting to Gmail SMTP server...")
+    print("\nConnecting to Gmail SMTP server...")
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             print(f"Logging in as {gmail_user}...")
@@ -331,8 +331,8 @@ def process_and_save(debug=False):
     all_articles = extract_articles_from_html(html_content)
     print(f"Found {len(all_articles)} articles")
     
-    # Limit to first 200 articles for daily email summary
-    max_articles = 200
+    # Limit to first 50 articles for daily email summary
+    max_articles = 50
     articles = all_articles[:max_articles]
     print(f"Using first {len(articles)} articles for email")
     
@@ -347,7 +347,7 @@ def process_and_save(debug=False):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(processed_html)
     
-    print(f"✓ Output saved successfully!")
+    print("✓ Output saved successfully!")
     print(f"  File: {output_file}")
     print(f"  Articles: {len(articles)}")
     
@@ -359,7 +359,7 @@ def process_and_save(debug=False):
         try:
             send_email(processed_html)
         except Exception as e:
-            print(f"\n⚠ Email sending failed, but file was saved successfully.")
+            print("\n⚠ Email sending failed, but file was saved successfully.")
             print(f"  You can review the file at: {output_file}")
             raise
 
