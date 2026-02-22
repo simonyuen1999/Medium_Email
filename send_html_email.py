@@ -19,6 +19,10 @@ from pathlib import Path
 from html import escape
 
 
+# Default recipients for email sending
+DEFAULT_RECIPIENTS = ['simonyuen1999@hotmail.com', 'Alex.ma@bmo.com']
+
+
 def get_current_timestamp():
     """Get current timestamp in EST timezone.
     
@@ -239,8 +243,21 @@ def process_html_for_email(html_content, articles):
     return html_content
 
 
-def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
-    """Send the processed HTML via email with unique Message-ID."""
+def send_email(html_content, recipients=None):
+    """Send the processed HTML via email with unique Message-ID.
+    
+    Args:
+        html_content: The HTML content to send
+        recipients: List of recipient email addresses. If None, uses DEFAULT_RECIPIENTS.
+    """
+    
+    # Use default recipients if none specified
+    if recipients is None:
+        recipients = DEFAULT_RECIPIENTS
+    
+    # Ensure recipients is a list
+    if isinstance(recipients, str):
+        recipients = [recipients]
     
     # Get credentials from environment variables
     gmail_user = os.getenv('GMAIL_USERNAME')
@@ -261,11 +278,16 @@ def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
     timestamp_str = get_current_timestamp()
     subject = f'Medium Article ({timestamp_str})'
     
+    # Check if running in GitHub Actions workflow and append to subject
+    is_github_actions = os.getenv('GITHUB_ACTIONS') == 'true'
+    if is_github_actions:
+        subject += ' from GitHub Workflow'
+    
     # Create message
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = gmail_user
-    msg['To'] = recipient
+    msg['To'] = ', '.join(recipients)  # Multiple recipients separated by comma
     msg['Message-ID'] = message_id  # Unique ID for each email
     
     # Add plain text version as fallback
@@ -287,12 +309,12 @@ def send_email(html_content, recipient='simonyuen1999@hotmail.com'):
             print(f"Logging in as {gmail_user}...")
             server.login(gmail_user, gmail_password)
             
-            print(f"Sending email to {recipient}...")
+            print(f"Sending email to {len(recipients)} recipient(s): {', '.join(recipients)}...")
             server.send_message(msg)
             
         print("✓ Email sent successfully!")
         print(f"  From: {gmail_user}")
-        print(f"  To: {recipient}")
+        print(f"  To: {', '.join(recipients)}")
         print(f"  Subject: {subject}")
         print(f"  Message-ID: {message_id}")
         
