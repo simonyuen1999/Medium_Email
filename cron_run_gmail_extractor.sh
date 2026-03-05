@@ -67,3 +67,7 @@ else
     echo "❌ Workflow failed. Check gmail_extractor.log for details."
     exit 1
 fi
+
+# Where wiki is my internal MediaWiki Apache web server
+SCP_CMD="/usr/bin/scp"
+$SCP_CMD medium_article_browser.html  wiki:/var/www/html/Medium.html

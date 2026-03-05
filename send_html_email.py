@@ -240,6 +240,15 @@ def process_html_for_email(html_content, articles):
         flags=re.DOTALL
     )
     
+    # Add Web Edition link to header h1
+    html_content = re.sub(
+        r'(<h1>.*?)(Web Edition)(.*?</h1>)',
+        r'\g<1><a href="https://www.cmee4k.com/Medium.html" target="_blank" style="color: white; text-decoration: underline;">Web Edition</a>\g<3>',
+        html_content,
+        count=1,
+        flags=re.DOTALL
+    )
+    
     return html_content
 
 
