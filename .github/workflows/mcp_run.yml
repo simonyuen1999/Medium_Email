@@ -3,7 +3,8 @@ name: MCP Run
 on:
   workflow_dispatch: {}
   schedule:
-    # Run daily at 13:10 UTC (8:10 AM EST Toronto time)
+    # Run daily at 13:10 UTC (8:10 AM EST / 9:10 AM EDT Toronto time)
+    # Note: GitHub Actions uses UTC and doesn't auto-adjust for DST
     - cron: '10 13 * * *'
 
 jobs:
