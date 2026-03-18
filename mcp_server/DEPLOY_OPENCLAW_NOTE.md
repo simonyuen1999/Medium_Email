@@ -22,10 +22,13 @@ At this moment, Openclaw cannot automatically install MCP.server from GitHub rep
 * Read_Medium_From_Gmail.py
 * mcp_server/stdio_mcp_server.py
 * mcp_server/_runner.py
+
 3. Prepare the following file in `read-medium-from-gmail` directory
+
 * Python `requirements.txt` file
 * Create `mcp.json` file
-This is folder structure
+  This is folder structure
+
 ```
 ~/.openclaw/mcp_servers/
     read-medium-from-gmail/
@@ -37,7 +40,9 @@ This is folder structure
 ```
 
 ## The MCP.server mcp.json file
+
 OpenClaw has a fixed, built‑in directory `mcp_servers` where it automatically looks for MCP servers:
+
 ```
 {
   "name": "read-medium-from-gmail",
@@ -68,8 +73,13 @@ OpenClaw has a fixed, built‑in directory `mcp_servers` where it automatically 
 2. This process will not terminate as long as Openclaw process is running
 3. It will execute pip to install the Python requirement
 4. Openlclaw calling `stdio_mcp_server.py'
-* stdio_mcp_server.py gets three enviroment variables from Openclaw environment setup (see below)
-* stdio_mcp_server.py statement: from `mcp_server._runner` import run_extraction as run_extractor.
+
+* stdio_mcp_server.py
+  * gets three enviroment variables from Openclaw environment setup (see below)
+  * statement: from mcp.server.fastmcp import FastMCP
+  * statement: mcp = FastMCP("Read.Medium.From.Gmail")
+  * ... ***Waiting be called*** ...
+  * statement: from `mcp_server._runner` import run_extraction as run_extractor.
 * _runner.py gets env_vars and (this is hard coded the name)
 * _runner.py statement: module = importlib.import_module("Read_Medium_From_Gmail.py")
 * Then, spec.loader.exec_module(module)
@@ -79,6 +89,7 @@ OpenClaw has a fixed, built‑in directory `mcp_servers` where it automatically 
 # Add this MCP.server to Openclaw
 
 Open `~/.openclaw/openclaw.json` file, find **mcpServers** section, and add the following into this section
+
 ```
 "read-medium-from-gmail": {
   "command": "/Users/simon/.openclaw/mcp_servers/read-medium-from-gmail/.venv/bin/python"
@@ -95,6 +106,7 @@ Open `~/.openclaw/openclaw.json` file, find **mcpServers** section, and add the 
 > * keep the MCP server running as a background process
 >
 > So the folder name is the link between:
+>
 > * the directory on disk
 > * the entry in `openclaw.json`
 > * the MCP server identity
@@ -102,19 +114,24 @@ Open `~/.openclaw/openclaw.json` file, find **mcpServers** section, and add the 
 > Note: "PYTHONPATH": "/Users/simon/.openclaw/mcp_servers/read-medium-from-gmail" is not needed.
 
 The development was based on Python 3.14, but Ubuntu only has Python 3.13.  So, we manually creates the MCP server .venv environment with Python 3.14.   In the manual setup testing, we already did the following for this .venv environment
+
 1. sudo apt install python3-full
+
 * Note: Ubuntu 24.04+ ships Python with PEP 668 protection, which prevents:
   * pip installing into system Python
   * pip installing into venvs created from system Python unless python3-full is installed
+
 2. Prepare, install modules, testing
+
 ```
 cd ~/.openclaw/mcp_servers/read-medium-from-gmail
 python3.14 -m venv .venv
 source .venv/bin/activate
-pip install beautifulsoup4 lxml python-dotenv
+pip install beautifulsoup4 lxml python-dotenv FastMCP
+pip list > requirements.txt
 ```
 
-The `command` line in `openclaw.json` file is pointing to **already (modules) setup and tested** .venv environment, so the `requirements.txt` file is not included in the MCP `~/.openclaw/mcp_servers/read-medium-from-gmail/` directory.
+The `command` line in `openclaw.json` file is pointing to **already (modules) setup and tested** .venv environment, so the `requirements.txt` file is included in the MCP `~/.openclaw/mcp_servers/read-medium-from-gmail/` directory.
 
 ## Why GMAIL_xxx env var are not defined in `openclaw.json`?
 
@@ -125,17 +142,20 @@ We defined these three GMAIL values in Openclaw 3.13 as env variable.  Openclaw 
 # Appendix: pip, uv, requirsments.txt
 
 Auto-generate from repo
+
 ```
 pip install pipreqs
 pipreqs . --force
 ```
+
 However, the requirements.txt file has all system modules, pipreqs over-detects is the common issue.
 
 uv keeps a clean dependency graph, but uv doesn't automatically export a minimal requirements.txt file.
+
 ```
 uv venv --python 3.14
 source .venv/bin/activate
-uv add beautifulsoup4 lxml python-dotenv
+uv add beautifulsoup4 lxml python-dotenv FastMCP
 uv pip list
 uv remove <package>
 uv export --format requirements-txt > requirements.txt
