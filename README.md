@@ -85,8 +85,23 @@ Medium_Email/
 
 ### 🚀 Usage Instructions
 
+#### Local Environment Setup (Required)
+Before local execution, configure Gmail credentials using one of these methods:
+
+1. Run the setup helper:
+```bash
+./setup_cron_env.sh
+```
+
+2. Or manually create `~/.gmail_env` with:
+```bash
+export GMAIL_USERNAME="GMail address"
+export GMAIL_PASSWORD="xxxxxxxxxx"
+export GMAIL_FOLDER="Inbox"
+```
+
 #### **NEW ULTIMATE WORKFLOW** ⭐ (Super Simple!)
-1. **Setup Gmail Extraction**: Follow `GMAIL_SECURITY_SETUP.md` to configure App Password
+1. **Setup Gmail Extraction**: Use `./setup_cron_env.sh` or create `~/.gmail_env` manually (see above)
 2. **⚡ ONE COMMAND DOES EVERYTHING**: `python Read_Medium_From_Gmail.py`
    - ✅ Extracts latest articles from Gmail
    - ✅ Updates master historical database
