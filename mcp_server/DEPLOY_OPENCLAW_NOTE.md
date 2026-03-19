@@ -72,34 +72,92 @@ OpenClaw has a fixed, built‑in directory `mcp_servers` where it automatically 
 1. Openclaw starts a MCP server as external process
 2. This process will not terminate as long as Openclaw process is running
 3. It will execute pip to install the Python requirement
-4. Openlclaw calling `stdio_mcp_server.py'
+4. Openlclaw calling `stdio_mcp_server.py`
 
-* stdio_mcp_server.py
+* **stdio_mcp_server.py**
   * gets three enviroment variables from Openclaw environment setup (see below)
-  * statement: from mcp.server.fastmcp import FastMCP
-  * statement: mcp = FastMCP("Read.Medium.From.Gmail")
+  * statement: `from mcp.server.fastmcp import FastMCP`
+  * statement: `mcp = FastMCP("Read.Medium.From.Gmail")`
   * ... ***Waiting be called*** ...
-  * statement: from `mcp_server._runner` import run_extraction as run_extractor.
-* _runner.py gets env_vars and (this is hard coded the name)
-* _runner.py statement: module = importlib.import_module("Read_Medium_From_Gmail.py")
-* Then, spec.loader.exec_module(module)
+  * statement: `from mcp_server._runner import run_extraction as run_extractor.`
+* **_runner.py** (Stdio method) gets env_vars and (this is hard coded the name)
+* **_runner.py** statement:  `module = importlib.import_module("Read_Medium_From_Gmail.py")`
+* Then calling `spec.loader.exec_module(module)`
 
 ---
 
 # Add this MCP.server to Openclaw
 
-Open `~/.openclaw/openclaw.json` file, find **mcpServers** section, and add the following into this section
-
+This is .openclaw/config/mcporter.json file
 ```
 "read-medium-from-gmail": {
   "command": "/Users/simon/.openclaw/mcp_servers/read-medium-from-gmail/.venv/bin/python"
-  "args": ["stdio_mcp_server.py"],
+  "args": ["/home/simon/.openclaw/mcp_servers/read-medium-from-gmail/stdio_mcp_server.py"],
+  # "cwd": "/home/simon/.openclaw/mcp_servers/read-medium-from-gmail",
   "env": {
      "NOT_IMPORTANT_VAR": "${GMAIL_FOLDER}"
   }
 }
 ```
+We confirm OpenClaw resolves args relative to its config directory (`/home/simon/.openclaw/config/`), not relative to the `cwd` setting.
 
+The flow is:
+
+1. OpenClaw reads config from /home/simon/.openclaw/config/mcporter.json
+2. Set the relative paths to from /home/simon/.openclaw/config/
+3. Reason: we need the full path in args parameter
+4. Spawns process with the resolved script path
+5. Sets process working directory to cwd (This is not correct, cwd does not work)
+Solution: Keep args to use absolute path
+
+In our testing, cwd has no effect.  We will skill / ignore the `cwd` parameter in the mcporter.json file.
+
+
+## Openclaw 3.13 uses `mcporter` to manage MCP servers
+
+**mcporter is not a subprocess.**  It can be executed when **openclaw gateway** is not running.
+
+* mcporter config list
+* mcporter config get <name> [--json]
+* mcporter doctor
+* mcporter add [option] <name> name [target]
+* mcporter remove name
+
+These daemon sub-commands do not make sense for come and go process
+
+* mcporter daemon stop
+* mcporter daemon start
+* mcporter daemon status
+
+The following mcporter is calling read medium from gmail entry point
+
+* **mcporter call read-medium-from-gmail.list_articles**
+* **mcporter call read-medium-from-gmail.run_extraction**
+
+Observation
+
+* When I execute `mcporter` command in `.openclaw` directory (only this dir), it uses `.openclaw/config/mcporter.json` file.
+* When I execute `mcporter` elswhere, it uses `$HOME/.mcporter/mcporter.json` file.
+
+Use this command to add our MCP server
+
+``` shell
+$ mcporter config add read-medium-from-gmail \
+   --command "/home/simon/.openclaw/mcp_servers/read-medium-from-gmail/.venv/bin/python" \
+   --arg "/home/simon/.openclaw/mcp_servers/read-medium-from-gmail/stdio_mcp_server.py" \
+   --env "NOT_IMP_VAR=Testing only"
+```
+
+1. `mcporter config add` doesn't have a `--cwd` flag
+2. cwd problem
+
+* Openclaw set program cwd to  `/home/simon/.openclaw/config/`
+* The paths in **args** are resolved from the config directory, not from cwd.
+* Then: set process working directory to cwd.
+
+## MCP worksflow
+
+> **The following are not completely correct** since Openclaw switch to `mcporter`.
 > * Openclaw finds `mcp_servers/read-medium-from-gmail` setup
 > * Load `mcp.json`
 > * Launch the command in that directory
@@ -113,6 +171,8 @@ Open `~/.openclaw/openclaw.json` file, find **mcpServers** section, and add the 
 >
 > Note: "PYTHONPATH": "/Users/simon/.openclaw/mcp_servers/read-medium-from-gmail" is not needed.
 
+## Python dependency and deploy to production (Openclaw system)
+
 The development was based on Python 3.14, but Ubuntu only has Python 3.13.  So, we manually creates the MCP server .venv environment with Python 3.14.   In the manual setup testing, we already did the following for this .venv environment
 
 1. sudo apt install python3-full
@@ -123,7 +183,7 @@ The development was based on Python 3.14, but Ubuntu only has Python 3.13.  So, 
 
 2. Prepare, install modules, testing
 
-```
+``` shell
 cd ~/.openclaw/mcp_servers/read-medium-from-gmail
 python3.14 -m venv .venv
 source .venv/bin/activate

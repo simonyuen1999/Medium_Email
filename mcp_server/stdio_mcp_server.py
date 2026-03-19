@@ -4,21 +4,6 @@ This implements a stdio-based MCP server that exposes tools for:
 - run_extraction: Trigger Gmail extraction
 - list_articles: List available articles from JSON files
 - get_article: Retrieve a specific article
-
-Usage with OpenClaw:
-{
-  "mcpServers": {
-    "read-medium-from-gmail": {
-      "command": "python",
-      "args": ["mcp_server/stdio_mcp_server.py"],
-      "env": {
-        "GMAIL_USERNAME": "${GMAIL_USERNAME}",
-        "GMAIL_PASSWORD": "${GMAIL_PASSWORD}",
-        "GMAIL_FOLDER": "${GMAIL_FOLDER}"
-      }
-    }
-  }
-}
 """
 
 import os
@@ -28,13 +13,23 @@ import glob
 from pathlib import Path
 from typing import Any
 
+# No need: Add parent directory to path so mcp_server package can be found when run as a script
+# sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("Read.Medium.From.Gmail")
 
-APP_DIR = Path(__file__).resolve().parent.parent
-LOG_DIR = APP_DIR / "mcp_server" / "logs"
+# In the run-time, APP_DIR should be the directory containing this script
+# e.g., /home/simon/.openclaw/mcp_servers/read-medium-from-gmail
+APP_DIR = Path(__file__).resolve().parent
+LOG_DIR = APP_DIR / "logs"
 
+# Set process working directory to APP_DIR
+# Need this to make sure all file operations are relative to the app directory where the JSON files are stored
+# This is important when the server is run from a different directory,
+# ensuring it can find the article JSON files and write logs correctly.
+os.chdir(APP_DIR)
 
 def get_article_files() -> list[str]:
     """Find all article JSON files in the app directory."""
@@ -79,14 +74,14 @@ def find_articles_by_title(search_term: str) -> list[dict]:
 
 
 @mcp.tool()
-def run_extraction(gmail_folder: str = "[Gmail]/Inbox") -> str:
+def run_extraction(gmail_folder: str = "Inbox") -> str:
     """Run the Medium email extraction from Gmail.
 
     This tool triggers the Read_Medium_From_Gmail.py script to fetch
     new Medium articles from your Gmail account.
 
     Args:
-        gmail_folder: The Gmail folder to search (default: "[Gmail]/Inbox")
+        gmail_folder: The Gmail folder to search (default: "Inbox")
 
     Returns:
         Status message with log file location
@@ -109,9 +104,14 @@ def run_extraction(gmail_folder: str = "[Gmail]/Inbox") -> str:
     log_path = str(LOG_DIR / f"openclaw_run_{job_id}.log")
 
     try:
-        from mcp_server._runner import run_extraction as run_extractor
-
-        run_extractor(env, log_path)
+        # Import _runner module directly by file path to avoid package issues
+        import importlib.util
+        runner_path = Path(__file__).resolve().parent / "_runner.py"
+        spec = importlib.util.spec_from_file_location("_runner", runner_path)
+        runner_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner_module)
+        
+        runner_module.run_extraction(env, log_path)
         return f"Extraction completed. Log file: {log_path}"
     except Exception as e:
         return f"Error during extraction: {str(e)}"
