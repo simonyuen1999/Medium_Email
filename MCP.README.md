@@ -87,7 +87,59 @@ curl -X POST http://localhost:8000/run -H "Content-Type: application/json" -d '{
 
 echo '{"gmail_username":"you@example.com","gmail_password":"app-pass"}' | python mcp_server/github_mcp_adapter.py
 
-If you want, I can also add a sample systemd/launchd unit or a GitHub Actions job that posts to `/run` and archives logs.<hr>
+If you want, I can also add a sample systemd/launchd unit or a GitHub Actions job that posts to `/run` and archives logs.
+
+<hr>
+
+## Test MCP server with JSON-RPC init
+``` bash
+cd $OPENCLAW_ROOT/mcp_servers/read-medium-from-gmail     # OPENCLAW_ROOT is /home/simon/.openclaw
+```
+
+``` bash
+$ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":\
+   {"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":\
+      {"name":"test","version":"1.0"}\
+   }}' | timeout 5  .venv/bin/python stdio_mcp_server.py 2>&1
+
+{"jsonrpc":"2.0","id":1,"result":
+  {"protocolVersion":"2024-11-05","capabilities":
+     {"experimental":{},"prompts":
+       {"lastChanged":false},"resources":
+          {"subscrible":false,"listChanged":false},"tools":
+            {"lastChanged":false}
+      },"serverInfo":
+       {"name":"Read.medium.From.Gail","version":"1.26.0"}
+    }  }
+```
+
+## Test MCP call directly
+``` bash
+$ mcporter call read-medium-from-gmail.list_articles 2>&1 || echo "Exit code: $?"
+```
+
+## Re-add MCP server with home scope
+``` bash
+$ mcporter config remove read-medium-from-gmail 2>&1 && \
+  mcporter config add read-medium-from-gmail \
+    --command ".venv/bin/python" \
+    --arg "stdio_mcp_server.py" \
+    --cwd "$OPENCLAW_ROOT/mcp_servers/read-medium-from-gmail" \
+    --scope home 2>&1
+```
+
+## Restart mcporter daemon and test
+``` bash
+$ mcporter daemon stop && mcporter daemon start && sleep 2 && mcporter list 2>&1
+
+Daemon stopped (if it was running).
+No MCP servers are configured for keep-alive; daemon not started.
+mcporter 0.7.3 - Listing 1 server(s) (per-server timeout: 30s)
+- read-medium-from-gmail (3 tools, 1.2s)
+Listed 1 server (1 healthy)
+```
+
+<hr>
 
 
 # GitHub Actions workflow (mcp_run.yml)
