@@ -69,5 +69,11 @@ else
 fi
 
 # Where wiki is my internal MediaWiki Apache web server
+echo "$(date): Use SCP to copy HTML file to Wiki site" >> gmail_extractor.log
+
 SCP_CMD="/usr/bin/scp"
-$SCP_CMD medium_article_browser.html  wiki:/var/www/html/Medium.html
+$SCP_CMD medium_article_browser.html  wiki:/var/www/html/Medium.html >> gmail_extractor.log
+
+echo "$(date): Copied HTML file to Wiki site" >> gmail_extractor.log
+
+exit 0
