@@ -77,11 +77,12 @@ def generate_table_rows(articles):
         title = escape(article['title'])
         url = article['url']
         email_date = article['email_date']
+        email_date_display = email_date.replace('-', '<br>-', 2) if email_date else email_date
         
         # Use direct link instead of JavaScript onclick for email client compatibility
         row = f'''                        <tr class="article-row {row_class}">
                             <td class="col-index">{index + 1}</td>
-                            <td class="col-date">{email_date}</td>
+                            <td class="col-date">{email_date_display}</td>
                             <td class="col-title">
                                 <a href="{url}" target="_blank" class="article-title">
                                     {title}
